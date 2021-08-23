@@ -17,7 +17,7 @@ kafka_config:
   refresh_frequency: 10
   offsets_initial: -2
   balance_strategy: "sticky"
-  group_id: "new_consumer_group_1"
+  group_id: "new_consumer_group_3"
   batch_mode: true
   batch_max: 512
 

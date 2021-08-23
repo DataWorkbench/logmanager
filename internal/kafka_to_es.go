@@ -71,6 +71,7 @@ func (c *ConsumerServer) ServiceStart() {
 	stopCh := make(chan error)
 	go func() {
 		stopCh <- c.KafkaDataLoader.Start()
+		c.KafkaDataLoader.Logger.Info().Msg("KafkaLoader Goroutine exits..").Fire()
 	}()
 
 	select {

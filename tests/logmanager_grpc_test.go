@@ -42,39 +42,31 @@ func TestPushLogStream(t *testing.T) {
 		OffsetsInitial: -2,
 		BatchMax:       512,
 	}
+
+	ctx, cancelFunc := context.WithCancel(ctx)
 	res, err := client.GetJobLog(ctx, reqStreamData)
-	fmt.Printf("reply for GetJobLog: [%v]", res)
 	require.Nil(t, err, "%+v", err)
 
 	stopCh := make(chan struct{})
-	dataCh := make(chan struct{})
-	go func() {
-		time.Sleep(60 * time.Second)
-		stopCh <- struct{}{}
-	}()
-
 	go func() {
 		for {
 			resp, err := res.Recv()
-			require.Nil(t, err, "%+v", err)
+			if err != nil {
+				fmt.Printf("Recv err %s", err.Error())
+				break
+			}
 			validCount := 0
 			dataMap := resp.LogFileMap
 			for _, value := range dataMap {
 				validCount += len(value.LogEntries)
 			}
-			fmt.Printf("server pushed log data, count: %d", validCount)
-			dataCh <- struct{}{}
+			fmt.Printf("server pushed log data, count: %d\n", validCount)
 		}
+		stopCh <- struct{}{}
 	}()
 
-	for {
-		select {
-		case <-stopCh:
-			fmt.Println("testing exits..")
-			return
-		case <-dataCh:
-			fmt.Println("continue to wait for server stream data")
-		}
-	}
-
+	time.Sleep(10 * time.Second)
+	cancelFunc()
+	<-stopCh
+	fmt.Println("testing exits..")
 }
