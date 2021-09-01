@@ -20,7 +20,6 @@ import (
 
 	"github.com/DataWorkbench/logmanager/config"
 	"github.com/DataWorkbench/logmanager/handler"
-	"github.com/DataWorkbench/logmanager/internal"
 )
 
 // Start for start the http server
@@ -40,15 +39,13 @@ func Start() (err error) {
 	ctx := glog.WithContext(context.Background(), lp)
 
 	var (
-		rpcServer      *grpcwrap.Server
-		metricServer   *metrics.Server
-		tracer         gtrace.Tracer
-		tracerCloser   io.Closer
-		consumerServer *internal.ConsumerServer
+		rpcServer    *grpcwrap.Server
+		metricServer *metrics.Server
+		tracer       gtrace.Tracer
+		tracerCloser io.Closer
 	)
 
 	defer func() {
-		consumerServer.ServiceClose()
 		rpcServer.GracefulStop()
 		_ = metricServer.Shutdown(ctx)
 		if tracerCloser != nil {
@@ -61,9 +58,11 @@ func Start() (err error) {
 	if err != nil {
 		return
 	}
+	ctx = gtrace.ContextWithTracer(ctx, tracer)
 
 	// init grpc.Server
-	rpcServer, err = grpcwrap.NewServer(ctx, cfg.GRPCServer, grpcwrap.ServerWithTracer(tracer))
+	grpcwrap.SetLogger(lp, cfg.GRPCLog)
+	rpcServer, err = grpcwrap.NewServer(ctx, cfg.GRPCServer)
 	if err != nil {
 		return
 	}
@@ -71,7 +70,7 @@ func Start() (err error) {
 	// Init handler.
 	handler.Init(
 		handler.WithLogger(lp),
-		handler.WithKafkaConfig(cfg.KafkaConfig),
+		handler.WithHdfsConfig(cfg.HdfsServer),
 	)
 
 	// Register rpc server.
@@ -103,9 +102,6 @@ func Start() (err error) {
 			return
 		}
 	}()
-
-	consumerServer = internal.InitConsumerServer(ctx, cfg.KafkaConfig, cfg.EsConfig)
-	go consumerServer.ServiceStart()
 
 	go func() {
 		sig := <-sigChan

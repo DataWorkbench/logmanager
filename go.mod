@@ -24,6 +24,7 @@ require (
 	google.golang.org/genproto v0.0.0-20210722135532-667f2b7c528f // indirect
 	google.golang.org/grpc v1.39.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	github.com/colinmarc/hdfs/v2 v2.2.0
 )
 
 replace github.com/DataWorkbench/common => ../common

@@ -21,32 +21,21 @@ const (
 	envPrefix = "LOG_MANAGER"
 )
 
-type KafkaConfig struct {
-	Brokers          string `json:"brokers" yaml:"brokers" env:"BROKERS" validate:"required"`
-	GroupId          string `json:"group_id" yaml:"group_id" env:"GROUP_ID" validate:"required"`
-	BatchMode        bool   `json:"batch_mode" yaml:"batch_mode" env:"BATCH_MODE" validate:"-"`
-	BatchMax         int    `json:"batch_max" yaml:"batch_max" env:"BATCH_MAX" validate:"-"`
-	TopicRegexp      string `json:"topic_regexp" yaml:"topic_regexp" env:"TOPIC_REGEXP" validate:"required"`
-	RefreshFrequency int    `json:"refresh_frequency" yaml:"refresh_frequency" env:"REFRESH_FREQUENCY" validate:"-"`
-	OffsetsInitial   int64  `json:"offsets_initial" yaml:"offsets_initial" env:"OFFSETS_INITIAL" validate:"oneof=-2 -1"`
-	BalanceStrategy  string `json:"balance_strategy" yaml:"balance_strategy" env:"BALANCE_STRATEGY,default=sticky" validate:"oneof=sticky range roundRobin"`
-}
-
-type EsConfig struct {
-	Urls       string `json:"urls" yaml:"urls" env:"URLS" validate:"required"`
-	IndexName  string `json:"index_name" yaml:"index_name" env:"INDEX_NAME" validate:"required"`
-	ShardsNum  int    `json:"shards_num" yaml:"shards_num" env:"SHARDS_NUM" validate:"required"`
-	ReplicaNum int    `json:"replica_num" yaml:"replica_num" env:"REPLICA_NUM" validate:"required"`
+type HdfsConfig struct {
+	// NameNode addresses
+	Addresses  string `json:"addresses"    yaml:"addresses"    env:"ADDRESSES"     validate:"required"`
+	UserName   string `json:"user_name"    yaml:"user_name"    env:"USER_NAME"     validate:"required"`
+	BufferSize int32  `json:"buffer_size"  yaml:"buffer_size"  env:"BUFFER_SIZE"   validate:"required"`
 }
 
 // Config is the configuration settings for logmanager
 type Config struct {
 	LogLevel      int8                   `json:"log_level"      yaml:"log_level"      env:"LOG_LEVEL"           validate:"gte=1,lte=5"`
 	GRPCServer    *grpcwrap.ServerConfig `json:"grpc_server"    yaml:"grpc_server"    env:"GRPC_SERVER"         validate:"required"`
+	GRPCLog       *grpcwrap.LogConfig    `json:"grpc_log"       yaml:"grpc_log"       env:"GRPC_LOG"            validate:"required"`
 	MetricsServer *metrics.Config        `json:"metrics_server" yaml:"metrics_server" env:"METRICS_SERVER"      validate:"required"`
-	KafkaConfig   *KafkaConfig           `json:"kafka_config"   yaml:"kafka_config"   env:"KAFKA_CONFIG"        validate:"required"`
-	EsConfig      *EsConfig              `json:"es_config"      yaml:"es_config"      env:"ES_CONFIG"           validate:"required"`
 	Tracer        *gtrace.Config         `json:"tracer"         yaml:"tracer"         env:"TRACER"              validate:"required"`
+	HdfsServer    *HdfsConfig            `json:"hdfs_server"    yaml:"hdfs_server"    env:"HDFS_SERVER"         validate:"required"`
 }
 
 func loadFromFile(cfg *Config) (err error) {

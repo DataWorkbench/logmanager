@@ -7,8 +7,8 @@ import (
 
 // global options in this package.
 var (
-	logger      *glog.Logger
-	kafkaConfig *config.KafkaConfig
+	logger           *glog.Logger
+	HdfsServerConfig *config.HdfsConfig
 )
 
 type Option func()
@@ -19,9 +19,9 @@ func WithLogger(lp *glog.Logger) Option {
 	}
 }
 
-func WithKafkaConfig(kc *config.KafkaConfig) Option {
+func WithHdfsConfig(hc *config.HdfsConfig) Option {
 	return func() {
-		kafkaConfig = kc
+		HdfsServerConfig = hc
 	}
 }
 
