@@ -35,7 +35,7 @@ func ListHistoryLogFiles(dirPath string) ([]os.FileInfo, error) {
 	return fileInfos, nil
 }
 
-func DownloadLogFile(filePath string, stream logpb.LogManager_DownloadLogFileServer) (err error) {
+func DownloadLogFile(filePath string, stream logpb.LogManager_DownloadJobMgrLogFileServer) (err error) {
 	logger.Debug().Msg(fmt.Sprintf("try to Download file [%s]", filePath)).Fire()
 	hdfsClient, err := internal.GetClient(HdfsServerConfig)
 	if err != nil {
@@ -56,7 +56,7 @@ func DownloadLogFile(filePath string, stream logpb.LogManager_DownloadLogFileSer
 	defer cancel()
 
 	go func() {
-		logger.Debug().String("begin to upload file", filePath).Fire()
+		logger.Debug().String("begin to upload file", filePath).Int("fileSize", int(fSize)).Fire()
 		downloadFileFromHdfs(ctx, hdfsClient, filePath, blockCh)
 		logger.Debug().String("uploading over, file", filePath).Fire()
 	}()
@@ -86,6 +86,7 @@ func DownloadLogFile(filePath string, stream logpb.LogManager_DownloadLogFileSer
 }
 
 func downloadFileFromHdfs(ctx context.Context, client *hdfs.Client, filePath string, blockCh chan<- *FileDataBlock) {
+	defer close(blockCh)
 	f, err := client.Open(filePath)
 	if err != nil {
 		blockCh <- &FileDataBlock{
@@ -95,11 +96,14 @@ func downloadFileFromHdfs(ctx context.Context, client *hdfs.Client, filePath str
 	}
 	defer func() {
 		_ = f.Close()
-		close(blockCh)
 	}()
 
 	bufReader := bufio.NewReader(f)
 	buffer := make([]byte, HdfsServerConfig.BufferSize)
+	totalByteSent := new(int)
+	defer func(countPointer *int) {
+		logger.Info().Int("file content byte sent total count", *(countPointer)).Fire()
+	}(totalByteSent)
 
 	for {
 		_count, err := bufReader.Read(buffer)
@@ -107,20 +111,23 @@ func downloadFileFromHdfs(ctx context.Context, client *hdfs.Client, filePath str
 		if _count != 0 {
 			_data = buffer[:_count]
 		}
+		*totalByteSent += _count
 
 		if err != nil {
+			logger.Warn().String("Read file data from HDFS failed", err.Error()).Fire()
 			rErr := err
 			if err == io.EOF {
 				rErr = nil
 			}
 
-			_block := &FileDataBlock{
+			_dataBlock := &FileDataBlock{
 				Data: _data,
 				Err:  rErr,
 			}
 			select {
 			case <-ctx.Done():
-			case blockCh <- _block:
+			case blockCh <- _dataBlock:
+				logger.Debug().Int("upload file data byte count (Err occur)", len(_data)).Fire()
 			}
 
 			return

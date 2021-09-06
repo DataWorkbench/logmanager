@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"github.com/DataWorkbench/common/constants"
-	"github.com/DataWorkbench/common/qerror"
 	"github.com/DataWorkbench/gproto/pkg/logpb"
 	"github.com/DataWorkbench/logmanager/handler"
+	"github.com/DataWorkbench/logmanager/internal"
 	"path/filepath"
 )
 
@@ -13,17 +14,35 @@ type LogManagerServer struct {
 	logpb.UnimplementedLogManagerServer
 }
 
-func (s *LogManagerServer) ListHistoryLogFiles(_ context.Context, req *logpb.ListHistLogsRequest) (*logpb.ListHistLogsReply, error) {
-	managerName := req.GetManager()
-	if managerName != constants.JobManagerName && managerName != constants.TaskManagerName {
-		return nil, qerror.InvalidParams.Format(managerName)
-	}
-
-	dirPath := filepath.Join("/", req.GetSpaceId(), req.GetFlowId(), req.GetInstanceId(), managerName)
-	resp := &logpb.ListHistLogsReply{
-		Stat: getFileStatInDir(dirPath),
+func (s *LogManagerServer) ListJMHistoryLogFiles(_ context.Context, req *logpb.ListHistLogsRequest) (*logpb.ListJMHistLogsReply, error) {
+	JMHdfsDirPath := internal.GetHdfsDirPath(req.GetSpaceId(), req.GetFlowId(), req.GetInstanceId(), constants.JobManagerName)
+	resp := &logpb.ListJMHistLogsReply{
+		Stat: getFileStatInDir(JMHdfsDirPath),
 	}
 	return resp, nil
+}
+
+// full path for taskManager log files:
+// /:space_id/:flow_id/:inst_id/logs/taskmanager/:taskManager_id/:log_file
+// so we need to get existed taskManagerIDs first
+func (s *LogManagerServer) ListTMHistoryLogFiles(_ context.Context, req *logpb.ListHistLogsRequest) (*logpb.ListTMHistLogsReply, error) {
+	TMHdfsDirPath := internal.GetHdfsDirPath(req.GetSpaceId(), req.GetFlowId(), req.GetInstanceId(), constants.TaskManagerName)
+	subDirInfos, err := handler.ListHistoryLogFiles(TMHdfsDirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	resultMap := make(map[string]*logpb.TaskLogFiles)
+	for _, _dirInfo := range subDirInfos {
+		if !_dirInfo.IsDir() {
+			continue
+		}
+		fullSubPath := fmt.Sprintf("%s/%s", TMHdfsDirPath, _dirInfo.Name())
+		_logFileInfosUnderTaskManager := getFileStatInDir(fullSubPath)
+		resultMap[_dirInfo.Name()] = &logpb.TaskLogFiles{Stat: _logFileInfosUnderTaskManager}
+	}
+
+	return &logpb.ListTMHistLogsReply{TaskLogs: resultMap}, nil
 }
 
 func getFileStatInDir(hdfsDirPath string) []*logpb.FileState {
@@ -41,9 +60,14 @@ func getFileStatInDir(hdfsDirPath string) []*logpb.FileState {
 	return result
 }
 
-func (s *LogManagerServer) DownloadLogFile(req *logpb.DownloadRequest, stream logpb.LogManager_DownloadLogFileServer) error {
-	filePath := filepath.Join("/", req.GetSpaceId(), req.GetFlowId(), req.GetInstanceId(), req.GetFileName(), req.GetManager())
-	return handler.DownloadLogFile(filePath, stream)
+func (s *LogManagerServer) DownloadJobMgrLogFile(req *logpb.DownloadJobMgrRequest, stream logpb.LogManager_DownloadJobMgrLogFileServer) error {
+	hdfsJobMgrFilePath := internal.GetHdfsJobMgrFilePath(req.GetSpaceId(), req.GetFlowId(), req.GetInstanceId(), req.GetFileName())
+	return handler.DownloadLogFile(hdfsJobMgrFilePath, stream)
+}
+
+func (s *LogManagerServer) DownloadTaskMgrLogFile(req *logpb.DownloadTaskMgrRequest, stream logpb.LogManager_DownloadTaskMgrLogFileServer) error {
+	hdfsTaskMgrFilePath := internal.GetHdfsTaskMgrFilePath(req.GetSpaceId(), req.GetFlowId(), req.GetInstanceId(), req.GetTaskManagerId(), req.GetFileName())
+	return handler.DownloadLogFile(hdfsTaskMgrFilePath, stream)
 }
 
 func (s *LogManagerServer) UploadLogFile(_ context.Context, req *logpb.UploadFileRequest) (*logpb.UploadFileReply, error) {
