@@ -51,7 +51,7 @@ func getFileStatInDir(hdfsDirPath string) []*logpb.FileState {
 	if err == nil {
 		for _, JMLogFile := range logFileInfos {
 			_info := &logpb.FileState{
-				Size:     JMLogFile.Size(),
+				FileSize: JMLogFile.Size(),
 				FileName: JMLogFile.Name(),
 			}
 			result = append(result, _info)

@@ -51,7 +51,7 @@ func DownloadLogFile(filePath string, stream logpb.LogManager_DownloadJobMgrLogF
 
 	fSize := fileInfo.Size()
 
-	blockCh := make(chan *FileDataBlock)
+	blockCh := make(chan FileDataBlock)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -85,11 +85,11 @@ func DownloadLogFile(filePath string, stream logpb.LogManager_DownloadJobMgrLogF
 	}
 }
 
-func downloadFileFromHdfs(ctx context.Context, client *hdfs.Client, filePath string, blockCh chan<- *FileDataBlock) {
+func downloadFileFromHdfs(ctx context.Context, client *hdfs.Client, filePath string, blockCh chan<- FileDataBlock) {
 	defer close(blockCh)
 	f, err := client.Open(filePath)
 	if err != nil {
-		blockCh <- &FileDataBlock{
+		blockCh <- FileDataBlock{
 			Err: err,
 		}
 		return
@@ -100,18 +100,13 @@ func downloadFileFromHdfs(ctx context.Context, client *hdfs.Client, filePath str
 
 	bufReader := bufio.NewReader(f)
 	buffer := make([]byte, HdfsServerConfig.BufferSize)
-	totalByteSent := new(int)
-	defer func(countPointer *int) {
-		logger.Info().Int("file content byte sent total count", *(countPointer)).Fire()
-	}(totalByteSent)
 
 	for {
 		_count, err := bufReader.Read(buffer)
-		var _data []byte
+		_data := make([]byte, _count)
 		if _count != 0 {
-			_data = buffer[:_count]
+			copy(_data, buffer[:_count])
 		}
-		*totalByteSent += _count
 
 		if err != nil {
 			logger.Warn().String("Read file data from HDFS failed", err.Error()).Fire()
@@ -120,7 +115,7 @@ func downloadFileFromHdfs(ctx context.Context, client *hdfs.Client, filePath str
 				rErr = nil
 			}
 
-			_dataBlock := &FileDataBlock{
+			_dataBlock := FileDataBlock{
 				Data: _data,
 				Err:  rErr,
 			}
@@ -133,7 +128,7 @@ func downloadFileFromHdfs(ctx context.Context, client *hdfs.Client, filePath str
 			return
 		}
 
-		_block := &FileDataBlock{
+		_block := FileDataBlock{
 			Data: _data,
 		}
 		select {

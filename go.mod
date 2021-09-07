@@ -5,8 +5,9 @@ go 1.15
 require (
 	github.com/DataWorkbench/common v0.0.0-20210804081408-9cafedee3de6
 	github.com/DataWorkbench/glog v0.0.0-20210809050640-4960fd6de6ab
-	github.com/DataWorkbench/gproto v0.0.0-20210811093804-86762ac04a76
+	github.com/DataWorkbench/gproto v0.0.0-20210902185100-ba6731c7c25c
 	github.com/DataWorkbench/loader v0.0.0-20201119073611-6f210eb11a8c
+	github.com/colinmarc/hdfs/v2 v2.2.0
 	github.com/go-playground/validator/v10 v10.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
@@ -24,11 +25,4 @@ require (
 	google.golang.org/genproto v0.0.0-20210722135532-667f2b7c528f // indirect
 	google.golang.org/grpc v1.39.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	github.com/colinmarc/hdfs/v2 v2.2.0
 )
-
-replace github.com/DataWorkbench/common => ../common
-
-replace github.com/DataWorkbench/logmanager => ../logmanager
-
-replace github.com/DataWorkbench/gproto => ../gproto
