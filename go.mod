@@ -3,18 +3,17 @@ module github.com/DataWorkbench/logmanager
 go 1.15
 
 require (
-	github.com/DataWorkbench/common v0.0.0-20210804081408-9cafedee3de6
+	github.com/DataWorkbench/common v0.0.0-20210918061532-a9d70d49b713
 	github.com/DataWorkbench/glog v0.0.0-20210809050640-4960fd6de6ab
-	github.com/DataWorkbench/gproto v0.0.0-20210902185100-ba6731c7c25c
+	github.com/DataWorkbench/gproto v0.0.0-20210921155359-afa10c8aa8e8
 	github.com/DataWorkbench/loader v0.0.0-20201119073611-6f210eb11a8c
 	github.com/colinmarc/hdfs/v2 v2.2.0
 	github.com/go-playground/validator/v10 v10.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/olivere/elastic/v7 v7.0.26
+	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/prometheus/common v0.29.0 // indirect
 	github.com/prometheus/procfs v0.7.1 // indirect
-	github.com/segmentio/kafka-go v0.4.17 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
